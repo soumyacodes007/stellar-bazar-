@@ -1,0 +1,84 @@
+# Stellar Hacks: Agents - Hackathon Guide & Resource Directory
+
+Welcome to the ultimate guide for the **Stellar Hacks: Agents** hackathon. This document serves as a unified reference point, combining hackathon logistics with an organized, detailed breakdown of every relevant protocol, SDK, and reference implementation.
+
+---
+
+## 🏆 Hackathon Overview: "Stellar Hacks: Agents"
+
+Hosted on **DoraHacks**, this event challenges developers to bridge the gap between artificial intelligence and frictionless, on-chain financial transactions.
+
+### Key Event Details
+* **Theme:** Empowering AI agents to move beyond simple chat interactions to perform autonomous economic activities (buying, selling, coordinating, and paying for services/APIs).
+* **Core Technology:** **x402 on Stellar**, a standard that allows developers to turn HTTP requests into paid, on-chain interactions using stablecoin micropayments and Soroban smart contract authorization.
+* **Prize Pool:** $10,000 USD
+* **Timeline:** 
+  * **Starts:** March 30, 2026 (06:00)
+  * **Ends:** April 13, 2026 (10:00)
+
+### What to Build / Focus Areas
+* **Autonomous Payments:** Solve the "hard stop" problem where AI agents get blocked by traditional fiat paywalls or API rate limits.
+* **Agentic Use Cases:** Paid agent services/APIs, agent wallets, on-chain paywalls, machine-run marketplaces, and unified autonomous research workflows.
+* **Infrastructure:** Implementations of Machine Payments Protocol (MPP) flows, privacy pools, and security/governance models for agentic systems.
+
+---
+
+## 🔗 Deep Dive: Provided Links & Resources
+
+Below is a detailed, categorized breakdown of the provided resources to help you bootstrap your hackathon project.
+
+### 1. The Core Innovation: x402 & Agentic Payments
+The "x402" protocol adapts the HTTP 402 (Payment Required) status code into a modern, crypto-native standard for machine-to-machine micropayments.
+
+* **[x402 Protocol Spec](https://www.x402.org/)**: The overarching x402 standard specification. It details how clients should handle 402 status codes by signing authorization entries and retrying requests with valid payments.
+* **[x402 on Stellar Docs](https://developers.stellar.org/docs/build/apps/x402)**: The primary guide for implementing this protocol specifically on the Stellar network. It explains how an agent hits a paywall, gets a 402, signs a Soroban transaction, and retries the request seamlessly.
+* **[Built on Stellar x402 Facilitator](https://developers.stellar.org/docs/build/apps/x402/built-on-stellar)**: Deep dive into the facilitator service infrastructure. This service processes the actual x402 payments on Stellar and is typically powered by tools like the OpenZeppelin Relayer.
+* **[x402 Demo on Stellar (Live)](https://x402-stellar-491bf9f7e30b.herokuapp.com/)**: A live, interactable web demonstration allowing you to experience the end-to-end x402 payment flow as an end-user.
+
+### 2. Official Repositories & SDKs
+These are the foundational codebases you should use to build your core agent payment logic.
+
+* **[Stellar x402 Monorepo](https://github.com/stellar/x402-stellar)**: The official GitHub repository from Stellar. Contains the backend facilitator service, a simple paywall demo (Express + React), Heroku deployment scripts, and automated channel account setup logic.
+* **[@x402/stellar on npm](https://www.npmjs.com/search?q=%40x402%2Fstellar)**: The official Node package. You can install this in your agent's codebase to easily integrate x402 standard interactions.
+* **[Stellar MPP (Machine-Payable Payments) SDK](https://github.com/stellar-experimental/stellar-mpp-sdk)**: An experimental SDK specifically focused on broader machine-to-machine payment routing on Stellar.
+
+### 3. Agent Setups & Live Reference Applications
+See how others have successfully wired together AI agents and Steller mechanics.
+
+* **[Stellar Sponsored Agent Account](https://github.com/oceans404/stellar-sponsored-agent-account)**: A brilliant tool that leverages Stellar's native sponsorship protocol to fund the ~1.5 XLM account creation fee. *Crucial for giving an AI agent its own USDC wallet instantly and for free.*
+  * *[SKILL.md View](https://stellar-sponsored-agent-account.onrender.com/SKILL.md)*: The AI-readable instruction file that teaches an LLM (like Claude) how to use this service.
+* **[Stellar Observatory Repo](https://github.com/elliotfriend/stellar-observatory)**: A complete, working app (Mainnet/Testnet) that fetches space weather conditions behind an x402 paywall. Notably includes an **MCP (Model Context Protocol) server**.
+  * *[Live App](https://stellar-observatory.vercel.app/)*: The Vercel deployment of the Observatory.
+* **[x402 Community Demo (Local)](https://github.com/jamesbachini/x402-Stellar-Demo)**: A minimal local demo created by a community member. Perfect for running locally to understand the basic payer client vs. protected Express server architecture without massive overhead.
+
+### 4. Advanced Ecosystem Integrations (DeFi & On-Ramps)
+If your agent needs to swap tokens, bridge fiat, or deposit into yield vaults, these repos are the blueprints.
+
+* **[Anchor Integration Starter Pack](https://github.com/ElliotFriend/regional-starter-pack)**: A framework-agnostic TypeScript toolkit for Stellar Anchors (fiat on/off-ramps). Includes implementations for Etherfuse, AlfredPay, and BlindPay, covering all major SEP (Stellar Ecosystem Proposal) standards. Also ships with MCP servers pre-configured.
+* **[Ya Otter Save](https://github.com/briwylde08/ya-otter-save)**: End-to-end fiat savings demo. Shows how an app can combine a fiat on-ramp, Stellar DEX stablecoin swaps, and Blend protocol yield deposits in a single flow.
+* **[Stellar DeFi App Dashboard](https://github.com/kaankacar/stellar-defi-app)**: A masterclass in protocol composability. Integrates Blend, Soroswap, Phoenix, Aquarius, the SDEX, and Reflector Oracle into one Next.js dashboard. Excellent for reviewing mainnet API call shapes.
+
+#### Targeted AI Integrations
+These specialized repositories by `carstenjacobsen` provide focused, Next.js + TypeScript implementations for specific DeFi actions:
+* **[AI Freighter Integration](https://github.com/carstenjacobsen/ai-freighter-integration)**: Connecting to the Freighter wallet, signing payments, and viewing balances.
+* **[AI Soroswap Integration](https://github.com/carstenjacobsen/ai-soroswap-integration)**: Aggregating swaps across multiple decentralized exchanges (Soroswap, Phoenix, Aqua, SDEX).
+* **[AI DeFindex Integration](https://github.com/carstenjacobsen/ai-defindex-integration)**: Managing deposits/withdrawals into yield vaults and tracking token balances.
+* **[AI Passkeys Integration](https://github.com/carstenjacobsen/ai-passkeys-integration)**: Creating WebAuthn passkey smart wallets combined with Etherfuse fiat ramps.
+* **[AI Etherfuse Integration](https://github.com/carstenjacobsen/ai-etherfuse-integration)**: Combining the Etherfuse fiat ramp, DeFindex yield, and Freighter wallet into a robust unified application.
+
+### 5. Cross-Industry Context (Stripe & Coinbase)
+Understanding Stripe's and Coinbase's approaches to agent payments will make your x402 implementation stronger by comparing industry standards.
+
+* **[Stripe Machine Payments Landing](https://stripe.com/machine-payments)**: Stripe's high-level marketing and concept page for AI agent payments.
+* **[Stripe MPP Docs](https://docs.stripe.com/machine-payments)** & **[Stripe MPP Quickstart](https://docs.stripe.com/machine-payments/quickstart)**: The technical documentation for Stripe's traditional (fiat-based) machine-to-machine payment APIs.
+* **[Stripe Machine Payments Repo](https://github.com/stripe-samples/machine-payments)**: Stripe's official code sample. Useful to compare their centralized approach with Stellar's web3/x402 decentralized approach.
+* **[Coinbase x402 Docs](https://docs.cdp.coinbase.com/x402/docs/welcome)**: Documentation showing how Coinbase implements the x402 spec via their Developer Platform, providing a strong comparison to Stellar's facilitator pattern.
+
+### 6. Essential Stellar Smart Contract Foundation
+To build with Soroban (Stellar's smart contract platform) and x402, you must understand these underlying primitives.
+
+* **[Stellar Contract Accounts](https://developers.stellar.org/docs/build/guides/conventions/contract-accounts)**: Explains how an agent or facilitator can operate through a contract account on Stellar.
+* **[Contract Authorization (Soroban)](https://developers.stellar.org/docs/build/guides/conventions/authorization)**: **Required reading**. You must understand Soroban's auth model to ensure AI agents can securely sign and authorize the x402 payment entries.
+
+---
+*Created as a preparation document for the Stellar Hacks: Agents Hackathon.*
