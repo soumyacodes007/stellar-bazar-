@@ -4,7 +4,7 @@
   "description": "Bazaar-enabled x402 facilitator for Stellar — payment proxy + service discovery",
   "type": "module",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node --es-module-specifier-resolution=node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "seed": "tsx scripts/seed.ts",
