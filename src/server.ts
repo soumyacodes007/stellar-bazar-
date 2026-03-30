@@ -59,7 +59,8 @@ app.use((_req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-    console.log(`\n🌟 Stellar Bazaar running on http://localhost:${PORT}`);
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    console.log(`\n🌟 Stellar Bazaar running on ${baseUrl}`);
     console.log(`📡 OZ Facilitator (testnet): https://channels.openzeppelin.com/x402/testnet`);
     console.log(`🗄️  Database: Supabase Postgres (ap-south-1)\n`);
 });
