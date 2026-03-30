@@ -13,7 +13,11 @@ const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.set('json spaces', 2); // Enable pretty-printed JSON responses globally
-app.use(cors());
+app.use(cors({
+    origin: process.env.NODE_ENV === 'production' 
+        ? (process.env.ALLOWED_ORIGINS?.split(',') || '*')
+        : '*'
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────

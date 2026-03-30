@@ -8,7 +8,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "seed": "tsx scripts/seed.ts",
-    "db:setup": "tsx scripts/setup-db.ts"
+    "seed:prod": "node dist/scripts/seed.js",
+    "db:setup": "tsx scripts/setup-db.ts",
+    "db:setup:prod": "node dist/scripts/setup-db.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
