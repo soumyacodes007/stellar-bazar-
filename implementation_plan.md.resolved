@@ -1,0 +1,205 @@
+# Implementation Plan: Unified AI Layer (`agent-api`)
+
+A separate, production-deployable Express.js server that exposes unified AI capabilities (LLM, STT, TTS, Image, Storage, Compute, HuggingFace) as x402-gated endpoints on the Stellar Testnet. All services are auto-registered in the Stellar Bazaar on startup for agent discovery.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> This is a **separate project folder** (`agent-api/`) inside your existing repo. It will have its own `package.json`, `.env`, and `tsconfig.json`.
+
+> [!IMPORTANT]
+> **API Keys Needed Before Running:**
+> - `GROQ_API_KEY` — From [console.groq.com](https://console.groq.com)
+> - `DEEPGRAM_API_KEY` — From [console.deepgram.com](https://console.deepgram.com) (**$200 free credits on signup**)
+> - `FAL_KEY` — From [fal.ai/dashboard](https://fal.ai/dashboard) (**free credits on signup**)
+> - `PINATA_JWT` — From [app.pinata.cloud](https://app.pinata.cloud)
+> - `HF_ACCESS_TOKEN` — From [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) (free)
+> - `STELLAR_ADDRESS` — Your Stellar Testnet address (to receive payments)
+
+> [!NOTE]
+> **Piston (Compute):** The public Piston API (`emkc.org`) now requires authorization. The plan includes a **self-hosted Docker instance** for the compute route. You need Docker installed. If you don't have Docker, this route will be skipped for the MVP and noted as `COMING_SOON`.
+
+---
+
+## Project Structure
+
+```
+stellar-bazar/
+├── agent-api/               ← NEW: Separate project
+│   ├── src/
+│   │   ├── server.ts        ← Main Express server + x402 middleware
+│   │   ├── router.ts        ← Intelligent LLM routing logic
+│   │   ├── routes/
+│   │   │   ├── llm.ts       ← POST /v1/chat (Groq LLMs)
+│   │   │   ├── stt.ts       ← POST /v1/stt (Deepgram Nova-3)
+│   │   │   ├── tts.ts       ← POST /v1/tts (Deepgram Aura)
+│   │   │   ├── image.ts     ← POST /v1/image (fal.ai Flux)
+│   │   │   ├── storage.ts   ← POST /v1/storage (Pinata/IPFS)
+│   │   │   ├── compute.ts   ← POST /v1/compute (Piston)
+│   │   │   └── hf.ts        ← POST /v1/hf/:model_id (HuggingFace)
+│   │   └── utils/
+│   │       ├── pricing.ts   ← Dynamic price map per route
+│   │       └── bazaar.ts    ← Auto-register all routes in Bazaar on startup
+│   ├── .env
+│   ├── .env.example
+│   ├── package.json
+│   └── tsconfig.json
+```
+
+---
+
+## Proposed Changes
+
+### Component: `agent-api/` (New Project)
+
+---
+
+#### [NEW] `package.json`
+Dependencies:
+- `express`, `dotenv`, `cors`, `multer` (for file upload)
+- `@x402/express`, `@x402/stellar`, `@x402/core` (x402 payment middleware)
+- `groq-sdk` (LLM + STT via Groq Whisper)
+- `@deepgram/sdk` (STT Nova-3, TTS Aura)
+- `@fal-ai/client` (Image Generation)
+- `pinata` (IPFS Storage)
+- `@huggingface/inference` (HuggingFace models)
+- `tsx`, `typescript` (devDependencies)
+
+---
+
+#### [NEW] `.env.example`
+```env
+# Stellar
+STELLAR_ADDRESS=GB3XY...
+FACILITATOR_URL=https://stellar-bazar.onrender.com
+
+# Server
+PORT=4030
+SERVICE_URL=http://localhost:4030
+
+# Provider Keys
+GROQ_API_KEY=gsk_...
+DEEPGRAM_API_KEY=...
+FAL_KEY=...
+PINATA_JWT=...
+PINATA_GATEWAY=...
+HF_ACCESS_TOKEN=hf_...
+
+# Compute (optional - requires Docker)
+PISTON_URL=http://localhost:2000
+```
+
+---
+
+#### [NEW] `src/utils/pricing.ts`
+Defines the **dynamic pricing map** for each route.
+
+| Route | Model/Service | Price (USDC) | How you profit |
+|---|---|---|---|
+| `POST /v1/chat` (model: **auto**) | Groq `llama-3.1-8b-instant` (router picks) | `$0.02` | Groq is almost free. High margin. |
+| `POST /v1/chat` (model: **llama-3.3-70b**) | Groq `llama-3.3-70b-versatile` | `$0.05` | Still cheap on Groq. |
+| `POST /v1/chat` (model: **llama-4-scout**) | Groq `llama-4-scout-17b-16e-instruct` | `$0.03` | New fast model. |
+| `POST /v1/stt` | Deepgram `nova-3` | `$0.05` | Per minute (fractions of a cent). |
+| `POST /v1/tts` | Deepgram `aura-2-en-us` | `$0.02` | Per character (fractions of a cent). |
+| `POST /v1/image` (model: **flux-schnell**) | `fal-ai/flux/schnell` | `$0.05` | Fast & cheap on fal.ai. |
+| `POST /v1/image` (model: **flux-pro**) | `fal-ai/flux-pro` | `$0.15` | Higher quality, higher price. |
+| `POST /v1/storage` | Pinata IPFS | `$0.01` | Pinata free tier (1GB). |
+| `POST /v1/compute` | Piston (self-hosted) | `$0.10` | You run it. 100% margin. |
+| `POST /v1/hf/:model_id` | HuggingFace Serverless | `$0.03` | HF free tier for serverless. |
+
+---
+
+#### [NEW] `src/router.ts` — Intelligent LLM Router
+When the agent passes `model: "auto"`, the router analyzes the prompt and picks the best model:
+
+**Routing Logic (Cheap Classification Call):**
+1. Fire a sub-100ms call to `llama-3.1-8b-instant` on Groq with a system prompt like: *"You are a routing agent. Classify this prompt as one of: SIMPLE, MEDIUM, COMPLEX. Reply only with the classification word."*
+2. Based on the result:
+   - `SIMPLE` → Route to `llama-3.1-8b-instant` (fastest, cheapest)
+   - `MEDIUM` → Route to `llama-4-scout-17b-16e-instruct` (balanced)
+   - `COMPLEX` → Route to `llama-3.3-70b-versatile` (smartest)
+
+---
+
+#### [NEW] `src/server.ts` — Main x402 Express Server
+- Sets up `paymentMiddleware` for all 7 routes at once.
+- Uses the pricing map to dynamically set each route's price.
+- On startup, calls `registerAllInBazaar()` to auto-register every endpoint.
+
+---
+
+#### [NEW] `src/routes/llm.ts`
+- Reads `req.body.model` and `req.body.messages`.
+- If `model === "auto"`, calls `router.ts` classify function, then routes to the chosen Groq model.
+- If a specific model is passed (e.g., `"llama-3.3-70b-versatile"`), routes directly.
+- Returns standard OpenAI-format JSON: `{ choices: [{ message: { content: "..." } }] }`.
+
+---
+
+#### [NEW] `src/routes/stt.ts`
+- Accepts `multipart/form-data` with an `audio` file.
+- Sends audio buffer to Deepgram `nova-3` model via the `@deepgram/sdk`.
+- Returns: `{ transcript: "...", confidence: 0.99 }`.
+
+---
+
+#### [NEW] `src/routes/tts.ts`
+- Accepts `{ text: "...", voice: "aura-2-en-us" }` (voice is optional).
+- Calls Deepgram Aura TTS API.
+- Returns an audio buffer (MP3) as `Content-Type: audio/mpeg`.
+
+---
+
+#### [NEW] `src/routes/image.ts`
+- Accepts `{ prompt: "...", model: "flux-schnell" | "flux-pro" }`.
+- If `model` is not provided, defaults to `flux-schnell`.
+- Calls fal.ai `@fal-ai/client` with the given prompt.
+- Returns: `{ url: "https://fal.ai/files/...", width: 1024, height: 1024 }`.
+
+---
+
+#### [NEW] `src/routes/storage.ts`
+- Accepts `multipart/form-data` with a `file`.
+- Uploads to Pinata IPFS using the modern `pinata` SDK.
+- Returns: `{ ipfs_hash: "QmXYZ...", gateway_url: "https://gateway.pinata.cloud/ipfs/QmXYZ..." }`.
+
+---
+
+#### [NEW] `src/routes/compute.ts`
+- Accepts `{ language: "python", code: "print('hello')" }`.
+- Forwards to self-hosted Piston API at `PISTON_URL`.
+- Returns: `{ stdout: "hello\n", stderr: "", exit_code: 0 }`.
+- If `PISTON_URL` is not set, returns a `503 Service Unavailable` with a helpful message.
+
+---
+
+#### [NEW] `src/routes/hf.ts`
+- Dynamic route: `POST /v1/hf/:model_id`.
+- Accepts `{ inputs: "...", parameters: {} }`.
+- Calls the HuggingFace Serverless Inference API using `@huggingface/inference`.
+- Uses generic `hf.request()` so any model is supported.
+- Returns the raw HuggingFace API response.
+
+---
+
+#### [NEW] `src/utils/bazaar.ts`
+- `registerAllInBazaar()` — On startup, sends `POST /register-service` to the Bazaar for each of the 7 endpoints, including detailed `input_schema`, `output_schema`, and `output_example` so agents can discover and use them autonomously.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+After building, we will run the following `curl.exe` tests to verify each route:
+
+1. `curl.exe -i http://localhost:4030/v1/chat` → Should return `402 Payment Required`
+2. `curl.exe -i http://localhost:4030/v1/image` → Should return `402 Payment Required`
+3. `curl.exe -i http://localhost:4030/v1/storage` → Should return `402 Payment Required`
+4. Check Bazaar: `curl.exe https://stellar-bazar.onrender.com/discovery/resources?q=unified`
+
+### Manual Verification
+1. Start server with `npm run dev` inside `agent-api/`.
+2. Confirm all 7 services are registered in the Bazaar discovery API.
+3. Check that the `402 Payment Required` header contains the correct Stellar address and pricing.

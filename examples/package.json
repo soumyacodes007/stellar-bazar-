@@ -1,0 +1,24 @@
+{
+  "name": "x402-rock-paper-scissors",
+  "version": "1.0.0",
+  "description": "Rock Paper Scissors game with x402 payments on Stellar",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "tsx watch server.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@x402/express": "latest",
+    "@x402/core": "latest",
+    "@x402/stellar": "latest",
+    "express": "^5.0.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
