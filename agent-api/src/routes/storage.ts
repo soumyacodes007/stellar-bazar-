@@ -1,7 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { PinataSDK } from 'pinata';
 import multer from 'multer';
-import { Blob } from 'buffer';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB limit
@@ -21,7 +20,7 @@ router.post('/v1/storage', upload.single('file'), async (req: Request, res: Resp
   });
 
   try {
-    const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+    const blob = new globalThis.Blob([req.file.buffer], { type: req.file.mimetype });
     const file = new File([blob], req.file.originalname || 'upload', { type: req.file.mimetype });
 
     const upload = await pinata.upload.public.file(file);
